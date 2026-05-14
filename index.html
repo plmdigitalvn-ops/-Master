@@ -3,390 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>垂容 Master - HSK 1-6 Smart Learning</title>
+    <title>垂容 MASTER - Học Tiếng Trung Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
-        .perspective { perspective: 1000px; }
-        .preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-        .card-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        .flipped .card-inner { transform: rotateY(180deg); }
-
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .print-container { display: block !important; width: 100%; }
-            .word-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .word-table th, .word-table td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
-            .word-table th { background-color: #f8f8f8; color: #333; }
-        }
-        .print-container { display: none; }
-        .loading-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card-inner { transition: transform 0.6s; transform-style: preserve-3d; }
+        .is-flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { backface-visibility: hidden; position: absolute; inset: 0; }
+        .card-back { transform: rotateY(180deg); }
+        @media print { .no-print { display: none !important; } }
+        /* Hiệu ứng active cho nút loa trên mobile */
+        .speak-btn:active { transform: scale(0.9); background-color: #fee2e2; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen pb-20">
+<body class="pb-20 md:pb-0">
 
-    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-4 no-print">
-        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-50 no-print">
+        <div class="max-w-4xl mx-auto px-4 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-br from-red-600 to-orange-500 p-2.5 rounded-2xl text-white shadow-lg">
+                <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                     <i data-lucide="brain-circuit"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-black tracking-tight uppercase leading-none">垂容 Master</h1>
-                    <p class="text-[10px] font-bold text-red-500 tracking-[0.2em] uppercase mt-1">HSK 1-6 Pro Vocabulary</p>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 uppercase">垂容 MASTER</h1>
+                    <p class="text-[10px] text-red-500 font-bold tracking-widest leading-none">HSK 1-6 PRO VOCABULARY</p>
                 </div>
             </div>
-            <div class="flex bg-slate-100 p-1 rounded-xl gap-1 overflow-x-auto max-w-full" id="tab-controls">
-                <button onclick="switchTab('library')" id="btn-library" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-white shadow-sm text-red-600 whitespace-nowrap">
-                    <i data-lucide="layout-grid" class="w-4 h-4"></i> Thư viện
-                </button>
-                <button onclick="switchTab('flashcards')" id="btn-flashcards" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 text-slate-500 hover:bg-white/50 whitespace-nowrap">
-                    <i data-lucide="zap" class="w-4 h-4"></i> Ôn tập
-                </button>
-                <button onclick="switchTab('add')" id="btn-add" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 text-slate-500 hover:bg-white/50 whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm từ
-                </button>
-                <div class="w-px bg-slate-200 mx-1"></div>
-                <button onclick="exportToPDF()" class="px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 text-slate-500 hover:bg-red-50 hover:text-red-600 whitespace-nowrap">
-                    <i data-lucide="printer" class="w-4 h-4"></i> In PDF
-                </button>
-            </div>
+            <button onclick="window.print()" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                <i data-lucide="printer" class="w-5 h-5"></i>
+            </button>
         </div>
-    </nav>
+    </header>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-10 no-print">
-        <div id="view-library" class="tab-view animate-in fade-in duration-500">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
-                <div>
-                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Thư viện của tôi</h2>
-                    <p class="text-slate-500 font-medium mt-1" id="word-count">Đang tải...</p>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <select id="topic-filter" onchange="renderLibrary()" class="bg-white border-2 border-slate-100 px-4 py-3 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/5 font-bold text-slate-600 shadow-sm">
-                        <option value="all">Tất cả trình độ</option>
-                        <option value="HSK 1">HSK 1</option>
-                        <option value="HSK 2">HSK 2</option>
-                        <option value="HSK 3">HSK 3</option>
-                        <option value="HSK 4">HSK 4</option>
-                        <option value="HSK 5">HSK 5</option>
-                        <option value="HSK 6">HSK 6</option>
-                        <option value="Khác">Khác</option>
-                    </select>
-                    <div class="relative flex-1 md:w-64">
-                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5"></i>
-                        <input type="text" id="search-input" oninput="renderLibrary()" placeholder="Tìm Hán tự/Nghĩa..." class="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/5 transition-all shadow-sm">
-                    </div>
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto p-4">
+        <!-- Navigation Tabs -->
+        <nav class="flex gap-1 bg-white p-1 rounded-2xl shadow-sm border mb-6 no-print">
+            <button onclick="switchTab('library')" id="tab-library" class="flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> Thư viện
+            </button>
+            <button onclick="switchTab('flashcard')" id="tab-flashcard" class="flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4"></i> Ôn tập
+            </button>
+            <button onclick="switchTab('add')" id="tab-add" class="flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm từ
+            </button>
+        </nav>
+
+        <!-- Library View -->
+        <section id="view-library" class="space-y-6">
+            <div class="flex flex-col gap-4 no-print">
+                <select id="filter-topic" onchange="renderLibrary()" class="w-full p-4 bg-white rounded-2xl border-none shadow-sm ring-1 ring-gray-200 text-sm focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                    <option value="All">Tất cả cấp độ (HSK 1-6)</option>
+                    <option value="HSK 1">HSK 1 - Cơ bản</option>
+                    <option value="HSK 2">HSK 2 - Sơ cấp</option>
+                    <option value="HSK 3">HSK 3 - Trung cấp</option>
+                    <option value="HSK 4">HSK 4 - Khá</option>
+                    <option value="HSK 5">HSK 5 - Cao cấp</option>
+                    <option value="HSK 6">HSK 6 - Chuyên gia</option>
+                </select>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="search-input" oninput="renderLibrary()" placeholder="Tìm Hán tự hoặc ý nghĩa..." class="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-none shadow-sm ring-1 ring-gray-200 text-sm focus:ring-2 focus:ring-red-500 transition-all outline-none">
                 </div>
             </div>
-            <div id="word-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <!-- Cards -->
-            </div>
-        </div>
 
-        <div id="view-flashcards" class="tab-view hidden max-w-xl mx-auto py-4">
-            <div id="flashcard-container" class="space-y-6">
-                <!-- Flashcard content -->
+            <div id="words-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Words will be injected here -->
             </div>
-        </div>
+        </section>
 
-        <div id="view-add" class="tab-view hidden grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100">
-                <h2 class="text-2xl font-black mb-2 flex items-center gap-2"><i data-lucide="edit-3" class="text-red-500"></i> Nhập từ đơn</h2>
-                <form id="add-word-form" class="space-y-5 mt-6">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Hán tự</label>
-                        <div class="relative">
-                            <input required id="in-hanzi" type="text" placeholder="学习" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl focus:border-red-500 focus:bg-white outline-none transition-all text-3xl font-black pr-20">
-                            <button type="button" onclick="translateAI()" id="btn-translate" class="absolute right-2 top-1/2 -translate-y-1/2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1 transition-all">
-                                <i data-lucide="wand-2" class="w-3 h-3"></i> Dịch
+        <!-- Flashcard View -->
+        <section id="view-flashcard" class="hidden py-10">
+            <div id="flashcard-container" class="flex flex-col items-center gap-8">
+                <div class="relative w-72 h-[420px] cursor-pointer" onclick="this.querySelector('.card-inner').classList.toggle('is-flipped')">
+                    <div class="card-inner w-full h-full relative">
+                        <!-- Front -->
+                        <div class="card-front bg-white rounded-[2rem] shadow-xl border flex flex-col items-center justify-center p-6 text-center">
+                            <span id="fc-topic" class="absolute top-6 px-3 py-1 bg-red-100 text-red-600 text-[10px] font-bold rounded-full uppercase tracking-widest"></span>
+                            <h2 id="fc-hanzi" class="text-7xl font-bold text-gray-800 mb-4"></h2>
+                            <p class="text-gray-400 text-xs">Chạm để lật thẻ</p>
+                        </div>
+                        <!-- Back -->
+                        <div class="card-back bg-red-500 rounded-[2rem] shadow-xl flex flex-col items-center justify-center p-8 text-center text-white">
+                            <p id="fc-pinyin" class="text-xl font-medium mb-2 opacity-90"></p>
+                            <h3 id="fc-meaning" class="text-3xl font-bold mb-6"></h3>
+                            <button onclick="event.stopPropagation(); handleSpeakFromFlashcard()" class="w-14 h-14 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all">
+                                <i data-lucide="volume-2" class="w-6 h-6 text-white"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Pinyin</label>
-                            <input required id="in-pinyin" type="text" placeholder="xuéxí" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl focus:border-red-500 focus:bg-white outline-none transition-all font-bold italic">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Trình độ</label>
-                            <select id="in-topic" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl focus:border-red-500 focus:bg-white outline-none transition-all font-bold">
-                                <option value="HSK 1">HSK 1</option>
-                                <option value="HSK 2">HSK 2</option>
-                                <option value="HSK 3">HSK 3</option>
-                                <option value="HSK 4">HSK 4</option>
-                                <option value="HSK 5">HSK 5</option>
-                                <option value="HSK 6">HSK 6</option>
-                                <option value="Khác">Khác</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Nghĩa tiếng Việt</label>
-                        <input required id="in-meaning" type="text" placeholder="Học tập" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl focus:border-red-500 focus:bg-white outline-none transition-all font-bold">
-                    </div>
-                    <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <i data-lucide="save"></i> Lưu vào kho từ
+                </div>
+                <div class="flex items-center gap-6 no-print">
+                    <button onclick="prevCard()" class="p-4 bg-white rounded-full shadow-md hover:bg-gray-50 transition-all active:scale-95 border">
+                        <i data-lucide="chevron-left" class="w-6 h-6 text-gray-600"></i>
                     </button>
-                </form>
+                    <span id="fc-counter" class="text-sm font-bold text-gray-400 bg-gray-100 px-4 py-2 rounded-full uppercase tracking-widest"></span>
+                    <button onclick="nextCard()" class="p-4 bg-white rounded-full shadow-md hover:bg-gray-50 transition-all active:scale-95 border">
+                        <i data-lucide="chevron-right" class="w-6 h-6 text-gray-600"></i>
+                    </button>
+                </div>
             </div>
+        </section>
 
-            <div class="space-y-6">
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
-                    <h2 class="text-2xl font-black mb-2 flex items-center gap-2"><i data-lucide="file-up" class="text-orange-400"></i> Nhập từ file</h2>
-                    <div id="drop-zone" onclick="document.getElementById('file-input').click()" class="mt-6 border-2 border-dashed border-slate-600 rounded-3xl p-8 text-center hover:border-orange-400 hover:bg-white/5 cursor-pointer transition-all">
-                        <i data-lucide="upload-cloud" class="w-10 h-10 mx-auto mb-4 text-slate-500"></i>
-                        <p class="font-bold text-slate-300">Nhấn để tải .json hoặc .csv</p>
-                        <input type="file" id="file-input" class="hidden" accept=".json,.csv" onchange="handleFileUpload(event)">
+        <!-- Add View -->
+        <section id="view-add" class="hidden">
+            <div class="bg-white rounded-[2rem] shadow-sm border p-6 md:p-8 space-y-6">
+                <div class="space-y-4">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Thông tin từ vựng</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input type="text" id="input-hanzi" placeholder="Hán tự (VD: 家人)" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                            <button onclick="translateWord()" class="absolute right-2 top-2 px-3 py-2 bg-red-500 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95">DỊCH</button>
+                        </div>
+                        <input type="text" id="input-pinyin" placeholder="Pinyin (VD: jiārén)" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                        <input type="text" id="input-meaning" placeholder="Nghĩa tiếng Việt" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                        <select id="input-topic" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                            <option value="HSK 1">HSK 1</option>
+                            <option value="HSK 2">HSK 2</option>
+                            <option value="HSK 3">HSK 3</option>
+                            <option value="HSK 4">HSK 4</option>
+                            <option value="HSK 5">HSK 5</option>
+                            <option value="HSK 6">HSK 6</option>
+                        </select>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm">
-                    <div>
-                        <p class="font-black text-slate-800">Sao lưu dữ liệu</p>
-                        <p class="text-xs text-slate-400 font-medium">Tải về toàn bộ từ vựng hiện có</p>
+                <button onclick="addWord()" class="w-full py-5 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 transition-all active:scale-[0.98]">
+                    LƯU VÀO THƯ VIỆN
+                </button>
+
+                <div class="pt-6 border-t border-dashed">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Quản lý dữ liệu</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportData()" class="p-4 bg-gray-50 text-gray-600 rounded-2xl text-xs font-bold border flex flex-col items-center gap-2">
+                            <i data-lucide="download" class="w-5 h-5"></i> SAO LƯU
+                        </button>
+                        <label class="p-4 bg-gray-50 text-gray-600 rounded-2xl text-xs font-bold border flex flex-col items-center gap-2 cursor-pointer">
+                            <i data-lucide="upload" class="w-5 h-5"></i> NHẬP FILE
+                            <input type="file" onchange="importData(event)" class="hidden">
+                        </label>
                     </div>
-                    <button onclick="exportBackup()" class="p-4 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all">
-                        <i data-lucide="download"></i>
-                    </button>
                 </div>
             </div>
-        </div>
+        </section>
     </main>
 
-    <div class="print-container p-10">
-        <h1 class="text-3xl font-bold mb-4">Danh sách từ vựng - 垂容 Master</h1>
-        <table class="word-table">
-            <thead>
-                <tr><th>Hán tự</th><th>Phiên âm</th><th>Nghĩa</th><th>Trình độ</th></tr>
-            </thead>
-            <tbody id="print-table-body"></tbody>
-        </table>
-    </div>
-
     <script>
-        const INITIAL_DATA = [
-            // HSK 1 - Nền tảng
+        // Dữ liệu ban đầu phong phú HSK 1-6
+        const initialWords = [
             { id: 1, hanzi: '家人', pinyin: 'jiārén', meaning: 'Người nhà', topic: 'HSK 1' },
             { id: 2, hanzi: '衣服', pinyin: 'yīfu', meaning: 'Quần áo', topic: 'HSK 1' },
-            { id: 3, hanzi: '水', pinyin: 'shuǐ', meaning: 'Nước', topic: 'HSK 1' },
-            { id: 4, hanzi: '学生', pinyin: 'xuésheng', meaning: 'Học sinh', topic: 'HSK 1' },
-            { id: 5, hanzi: '北京', pinyin: 'Běijīng', meaning: 'Bắc Kinh', topic: 'HSK 1' },
-            // HSK 2 - Đời sống hàng ngày
-            { id: 6, hanzi: '生病', pinyin: 'shēngbìng', meaning: 'Bị ốm', topic: 'HSK 2' },
-            { id: 7, hanzi: '旅游', pinyin: 'lǚyóu', meaning: 'Du lịch', topic: 'HSK 2' },
-            { id: 8, hanzi: '已经', pinyin: 'yǐjīng', meaning: 'Đã', topic: 'HSK 2' },
-            { id: 9, hanzi: '欢迎', pinyin: 'huānyíng', meaning: 'Hoan nghênh', topic: 'HSK 2' },
-            { id: 10, hanzi: '非常', pinyin: 'fēicháng', meaning: 'Vô cùng', topic: 'HSK 2' },
-            // HSK 3 - Giao tiếp phức tạp
-            { id: 11, hanzi: '准备', pinyin: 'zhǔnbèi', meaning: 'Chuẩn bị', topic: 'HSK 3' },
-            { id: 12, hanzi: '环境', pinyin: 'huánjìng', meaning: 'Môi trường', topic: 'HSK 3' },
-            { id: 13, hanzi: '舒服', pinyin: 'shūfu', meaning: 'Thoải mái', topic: 'HSK 3' },
-            { id: 14, hanzi: '解决', pinyin: 'jiějué', meaning: 'Giải quyết', topic: 'HSK 3' },
-            { id: 15, hanzi: '愿意', pinyin: 'yuànyì', meaning: 'Sẵn lòng', topic: 'HSK 3' },
-            // HSK 4 - Công việc và Xã hội
-            { id: 16, hanzi: '坚持', pinyin: 'jiānchí', meaning: 'Kiên trì', topic: 'HSK 4' },
-            { id: 17, hanzi: '竟然', pinyin: 'jìngrán', meaning: 'Không ngờ, hóa ra', topic: 'HSK 4' },
-            { id: 18, hanzi: '恐怕', pinyin: 'kǒngpà', meaning: 'E rằng', topic: 'HSK 4' },
-            { id: 19, hanzi: '安排', pinyin: 'ānpái', meaning: 'Sắp xếp', topic: 'HSK 4' },
-            { id: 20, hanzi: '由于', pinyin: 'yóuyú', meaning: 'Do, bởi vì', topic: 'HSK 4' },
-            // HSK 5 - Chuyên sâu, Trừu tượng
-            { id: 21, hanzi: '资源', pinyin: 'zīyuán', meaning: 'Tài nguyên', topic: 'HSK 5' },
-            { id: 22, hanzi: '核心', pinyin: 'héxīn', meaning: 'Cốt lõi', topic: 'HSK 5' },
-            { id: 23, hanzi: '毕竟', pinyin: 'bìjìng', meaning: 'Rốt cuộc', topic: 'HSK 5' },
-            { id: 24, hanzi: '恰好', pinyin: 'qiàhǎo', meaning: 'Vừa hay', topic: 'HSK 5' },
-            { id: 25, hanzi: '魅力', pinyin: 'mèilì', meaning: 'Mê lực, sức hút', topic: 'HSK 5' },
-            // HSK 6 - Cao cấp, Thành ngữ, Nghệ thuật
-            { id: 26, hanzi: '恍然大悟', pinyin: 'huǎngrán dàwù', meaning: 'Bừng tỉnh đại ngộ', topic: 'HSK 6' },
-            { id: 27, hanzi: '弥漫', pinyin: 'mímàn', meaning: 'Lan tỏa, bao trùm', topic: 'HSK 6' },
-            { id: 28, hanzi: '凝聚', pinyin: 'níngjù', meaning: 'Ngưng tụ, hội tụ', topic: 'HSK 6' },
-            { id: 29, hanzi: '瞻仰', pinyin: 'zhānyǎng', meaning: 'Chiêm ngưỡng, kính viếng', topic: 'HSK 6' },
-            { id: 30, hanzi: '精益求精', pinyin: 'jīngyì qiú jīng', meaning: 'Đã tốt còn muốn tốt hơn', topic: 'HSK 6' }
+            { id: 3, hanzi: '准备', pinyin: 'zhǔnbèi', meaning: 'Chuẩn bị', topic: 'HSK 2' },
+            { id: 4, hanzi: '希望', pinyin: 'xīwàng', meaning: 'Hy vọng', topic: 'HSK 2' },
+            { id: 5, hanzi: '努力', pinyin: 'nǔlì', meaning: 'Nỗ lực', topic: 'HSK 3' },
+            { id: 6, hanzi: '了解', pinyin: 'liǎojiě', meaning: 'Hiểu rõ', topic: 'HSK 3' },
+            { id: 7, hanzi: '诚实', pinyin: 'chéngshí', meaning: 'Thành thật', topic: 'HSK 4' },
+            { id: 8, hanzi: '偶尔', pinyin: 'ǒu\'ěr', meaning: 'Thỉnh thoảng', topic: 'HSK 4' },
+            { id: 9, hanzi: '恍然大悟', pinyin: 'huǎngrán dàwù', meaning: 'Bừng tỉnh đại ngộ', topic: 'HSK 6' },
+            { id: 10, hanzi: '繁荣', pinyin: 'fánróng', meaning: 'Phồn vinh', topic: 'HSK 5' }
         ];
 
-        let words = JSON.parse(localStorage.getItem('chuiyong_master_db')) || INITIAL_DATA;
-        let currentFlashcardIndex = 0;
+        let words = JSON.parse(localStorage.getItem('tr_master_words')) || initialWords;
+        let currentCardIndex = 0;
 
+        // KHẮC PHỤC LỖI ÂM THANH MOBILE
         function speak(text) {
-            if (!('speechSynthesis' in window)) return;
-            
-            // Critical fix for Mobile: Clear queue and restart
+            if (!text) return;
+
+            // 1. Dừng ngay lập tức các câu đang đọc dở (Fix treo hàng đợi iOS)
             window.speechSynthesis.cancel();
 
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'zh-CN';
-            ut.rate = 0.85;
-            ut.pitch = 1;
+            // 2. Tạo đối tượng đọc mới hoàn toàn
+            const utterance = new SpeechSynthesisUtterance(text);
             
-            // Fix for iOS silent queue
+            // 3. Cấu hình ngôn ngữ
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.85; // Đọc chậm một chút để dễ nghe
+            utterance.pitch = 1;
+
+            // 4. Tìm giọng đọc phù hợp (Optional but better)
+            const voices = window.speechSynthesis.getVoices();
+            const chineseVoice = voices.find(v => v.lang.includes('zh-CN') || v.lang.includes('zh_CN'));
+            if (chineseVoice) utterance.voice = chineseVoice;
+
+            // 5. Phát âm thanh
+            window.speechSynthesis.speak(utterance);
+
+            // 6. Bug fix cho một số bản Chrome mobile tự động pause
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
             }
-
-            window.speechSynthesis.speak(ut);
         }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('bg-white', 'shadow-sm', 'text-red-600');
-                b.classList.add('text-slate-500');
+        // Wrapper để phát âm từ Flashcard mặt sau
+        function handleSpeakFromFlashcard() {
+            const word = filteredWordsForFlashcard()[currentCardIndex];
+            if (word) speak(word.hanzi);
+        }
+
+        function switchTab(tab) {
+            ['library', 'flashcard', 'add'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 text-gray-500 hover:bg-gray-50";
             });
-            document.getElementById(`btn-${tabId}`).classList.add('bg-white', 'shadow-sm', 'text-red-600');
-
-            if (tabId === 'library') renderLibrary();
-            if (tabId === 'flashcards') {
-                currentFlashcardIndex = 0;
-                renderFlashcards();
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-red-500 text-white shadow-md";
+            
+            if (tab === 'flashcard') {
+                currentCardIndex = 0;
+                updateFlashcard();
             }
-        }
-
-        async function translateAI() {
-            const hanzi = document.getElementById('in-hanzi').value.trim();
-            const btn = document.getElementById('btn-translate');
-            if (!hanzi) return;
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 loading-spin"></i>`;
             lucide.createIcons();
-            try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(hanzi)}&langpair=zh-CN|vi`);
-                const data = await res.json();
-                if (data.responseData) document.getElementById('in-meaning').value = data.responseData.translatedText;
-            } catch (err) { console.error(err); } 
-            finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="wand-2" class="w-3 h-3"></i> Dịch`;
-                lucide.createIcons();
-            }
         }
 
         function renderLibrary() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const topic = document.getElementById('topic-filter').value;
-            const grid = document.getElementById('word-grid');
+            const filter = document.getElementById('filter-topic').value;
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const list = document.getElementById('words-list');
             
-            const filtered = words.filter(w => {
-                const matchesSearch = w.hanzi.includes(query) || w.meaning.toLowerCase().includes(query) || (w.pinyin && w.pinyin.toLowerCase().includes(query));
-                const matchesTopic = topic === 'all' || w.topic === topic;
-                return matchesSearch && matchesTopic;
-            });
+            const filtered = words.filter(w => 
+                (filter === 'All' || w.topic === filter) &&
+                (w.hanzi.toLowerCase().includes(search) || w.meaning.toLowerCase().includes(search))
+            );
 
-            document.getElementById('word-count').innerText = `Kho tàng: ${filtered.length} thẻ từ`;
-            
-            grid.innerHTML = filtered.map(word => `
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 group hover:shadow-xl transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="px-2 py-1 bg-red-50 text-red-500 text-[10px] font-black rounded-lg uppercase border border-red-100">${word.topic}</span>
-                        <div class="flex gap-1">
-                            <button onclick="speak('${word.hanzi}')" class="p-2 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90">
-                                <i data-lucide="volume-2" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="deleteWord(${word.id})" class="p-2 text-slate-200 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
+            list.innerHTML = filtered.map(w => `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between group transition-all hover:shadow-md">
+                    <div class="flex-1">
+                        <span class="inline-block px-2 py-0.5 bg-red-50 text-red-500 text-[9px] font-bold rounded-md mb-2">${w.topic}</span>
+                        <h3 class="text-3xl font-bold text-gray-800 leading-tight">${w.hanzi}</h3>
+                        <p class="text-red-500 text-sm italic font-medium">${w.pinyin}</p>
+                        <p class="text-gray-500 mt-2 font-medium text-sm">${w.meaning}</p>
                     </div>
-                    <h3 class="text-4xl font-black text-slate-800 mb-1">${word.hanzi}</h3>
-                    <p class="text-red-500 font-bold italic mb-4 text-sm">${word.pinyin || ''}</p>
-                    <div class="pt-4 border-t border-slate-50 text-slate-600 font-bold">${word.meaning}</div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="speak('${w.hanzi}')" class="speak-btn w-12 h-12 flex items-center justify-center bg-gray-50 rounded-2xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="deleteWord(${w.id})" class="w-12 h-12 flex items-center justify-center text-gray-300 hover:text-red-500 transition-all no-print">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function renderFlashcards() {
+        function filteredWordsForFlashcard() {
+            const filter = document.getElementById('filter-topic').value;
+            return words.filter(w => filter === 'All' || w.topic === filter);
+        }
+
+        function updateFlashcard() {
+            const filtered = filteredWordsForFlashcard();
             const container = document.getElementById('flashcard-container');
-            if (words.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-slate-400">Hãy thêm từ để bắt đầu!</div>`;
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 font-bold py-20 uppercase tracking-widest">Không có từ vựng nào!</div>';
                 return;
             }
-            const word = words[currentFlashcardIndex];
-            container.innerHTML = `
-                <div id="flash-card" onclick="this.classList.toggle('flipped')" class="perspective h-[400px] cursor-pointer">
-                    <div class="card-inner relative w-full h-full preserve-3d shadow-2xl rounded-[3rem]">
-                        <div class="absolute inset-0 backface-hidden bg-white border-2 border-slate-50 flex flex-col items-center justify-center rounded-[3rem]">
-                            <span class="absolute top-8 left-8 text-slate-100 font-black text-4xl">#${currentFlashcardIndex + 1}</span>
-                            <h2 class="text-7xl md:text-8xl font-black text-slate-800 text-center px-4">${word.hanzi}</h2>
-                            <p class="mt-8 text-slate-300 font-bold text-[10px] uppercase tracking-widest">Chạm để lật</p>
-                        </div>
-                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-red-600 to-orange-500 text-white flex flex-col items-center justify-center rounded-[3rem]">
-                            <p class="text-xl font-bold opacity-80 mb-2 uppercase tracking-widest">${word.pinyin || ''}</p>
-                            <h3 class="text-4xl font-black text-center px-10 leading-tight">${word.meaning}</h3>
-                            <button onclick="event.stopPropagation(); speak('${word.hanzi}')" class="mt-8 p-5 bg-white/20 rounded-3xl backdrop-blur-md active:scale-90 transition-all">
-                                <i data-lucide="volume-2" class="w-8 h-8"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
-                    <button onclick="prevCard()" class="p-4 hover:bg-slate-100 rounded-2xl"><i data-lucide="chevron-left"></i></button>
-                    <div class="text-center flex-1 mx-4">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${currentFlashcardIndex + 1} / ${words.length}</span>
-                        <div class="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
-                            <div class="h-full bg-red-500 transition-all duration-500" style="width: ${((currentFlashcardIndex + 1) / words.length) * 100}%"></div>
-                        </div>
-                    </div>
-                    <button onclick="nextCard()" class="p-4 hover:bg-slate-100 rounded-2xl"><i data-lucide="chevron-right"></i></button>
-                </div>
-            `;
-            lucide.createIcons();
+
+            const word = filtered[currentCardIndex];
+            document.getElementById('fc-hanzi').innerText = word.hanzi;
+            document.getElementById('fc-pinyin').innerText = word.pinyin;
+            document.getElementById('fc-meaning').innerText = word.meaning;
+            document.getElementById('fc-topic').innerText = word.topic;
+            document.getElementById('fc-counter').innerText = `${currentCardIndex + 1} / ${filtered.length}`;
+            document.querySelector('.card-inner').classList.remove('is-flipped');
         }
 
-        function nextCard() { if (currentFlashcardIndex < words.length - 1) { currentFlashcardIndex++; renderFlashcards(); } }
-        function prevCard() { if (currentFlashcardIndex > 0) { currentFlashcardIndex--; renderFlashcards(); } }
-        function deleteWord(id) { if(confirm('Xóa từ này khỏi thư viện?')) { words = words.filter(w => w.id !== id); save(); renderLibrary(); } }
-        function save() { localStorage.setItem('chuiyong_master_db', JSON.stringify(words)); }
-
-        document.getElementById('add-word-form').onsubmit = (e) => {
-            e.preventDefault();
-            words.unshift({
-                id: Date.now(),
-                hanzi: document.getElementById('in-hanzi').value,
-                pinyin: document.getElementById('in-pinyin').value,
-                meaning: document.getElementById('in-meaning').value,
-                topic: document.getElementById('in-topic').value
-            });
-            save(); e.target.reset(); switchTab('library');
-        };
-
-        function exportToPDF() {
-            document.getElementById('print-table-body').innerHTML = words.map(w => `
-                <tr><td><strong>${w.hanzi}</strong></td><td style="color:#ef4444">${w.pinyin || ''}</td><td>${w.meaning}</td><td>${w.topic}</td></tr>
-            `).join('');
-            window.print();
+        function nextCard() {
+            const filtered = filteredWordsForFlashcard();
+            if (currentCardIndex < filtered.length - 1) {
+                currentCardIndex++;
+                updateFlashcard();
+            }
         }
 
-        function exportBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(words));
-            const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", "chuiyong_backup.json");
-            dlAnchor.click();
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                updateFlashcard();
+            }
         }
 
-        function handleFileUpload(e) {
+        async function translateWord() {
+            const hanzi = document.getElementById('input-hanzi').value;
+            if (!hanzi) return;
+            
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(hanzi)}&langpair=zh-CN|vi`);
+                const data = await res.json();
+                document.getElementById('input-meaning').value = data.responseData.translatedText;
+            } catch (e) { console.error(e); }
+        }
+
+        function addWord() {
+            const hanzi = document.getElementById('input-hanzi').value;
+            const pinyin = document.getElementById('input-pinyin').value;
+            const meaning = document.getElementById('input-meaning').value;
+            const topic = document.getElementById('input-topic').value;
+
+            if (!hanzi || !meaning) return;
+
+            const newWord = { id: Date.now(), hanzi, pinyin, meaning, topic };
+            words.unshift(newWord);
+            saveData();
+            
+            document.getElementById('input-hanzi').value = '';
+            document.getElementById('input-pinyin').value = '';
+            document.getElementById('input-meaning').value = '';
+            
+            switchTab('library');
+            renderLibrary();
+        }
+
+        function deleteWord(id) {
+            words = words.filter(w => w.id !== id);
+            saveData();
+            renderLibrary();
+        }
+
+        function saveData() {
+            localStorage.setItem('tr_master_words', JSON.stringify(words));
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(words, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `thuy-dung-master-backup-${new Date().toLocaleDateString()}.json`;
+            a.click();
+        }
+
+        function importData(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (event) => {
-                try {
-                    const imported = JSON.parse(event.target.result);
-                    if (Array.isArray(imported)) {
-                        words = [...imported, ...words];
-                        save(); renderLibrary(); switchTab('library');
-                    }
-                } catch(e) { console.error("Lỗi đọc file"); }
+                const imported = JSON.parse(event.target.result);
+                words = [...imported, ...words];
+                saveData();
+                renderLibrary();
+                alert('Đã nhập dữ liệu thành công!');
             };
             reader.readAsText(file);
         }
 
-        window.onload = () => { lucide.createIcons(); renderLibrary(); };
+        // Initialize
+        window.onload = () => {
+            lucide.createIcons();
+            switchTab('library');
+            renderLibrary();
+            
+            // Đánh thức SpeechSynthesis (Hack cho Mobile Safari)
+            window.addEventListener('touchstart', function() {
+                const dummy = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(dummy);
+            }, { once: true });
+        };
     </script>
 </body>
 </html>
