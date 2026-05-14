@@ -351,10 +351,31 @@
         function prevCard() { if (currentFlashcardIndex > 0) { currentFlashcardIndex--; renderFlashcards(); } }
 
         function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                alert("Trình duyệt của bạn không hỗ trợ phát âm.");
+                return;
+            }
+
+            // Hủy các yêu cầu phát âm đang chờ để tránh bị kẹt hàng đợi trên Mobile
+            window.speechSynthesis.cancel();
+
             const ut = new SpeechSynthesisUtterance(text);
+            
+            // Thiết lập ngôn ngữ và giọng đọc
             ut.lang = 'zh-CN';
-            ut.rate = 0.8;
+            ut.rate = 0.8; // Tốc độ đọc chậm một chút để dễ nghe
+            ut.pitch = 1;
+            ut.volume = 1;
+
+            // Fix cho một số trình duyệt Chrome/Safari trên Mobile đôi khi bị "treo" SpeechSynthesis
+            window.speechSynthesis.resume();
+            
             window.speechSynthesis.speak(ut);
+
+            // Debug lỗi nếu có (chỉ hiện ở console)
+            ut.onerror = (event) => {
+                console.error('SpeechSynthesis Error:', event.error);
+            };
         }
 
         function deleteWord(id) {
