@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>垂容 MASTER - 100+ Từ vựng HSK 1-6</title>
+    <title>垂容 MASTER - AI 掃描</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -18,23 +19,12 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-pop { animation: fadeIn 0.3s ease-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
+        .loading-shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body class="pb-24">
-
-    <!-- MODAL KHỞI ĐỘNG (BẮT BUỘC ĐỂ MỞ ÂM THANH MOBILE) -->
-    <div id="audio-unlocker" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 no-print">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl animate-pop">
-            <div class="w-24 h-24 bg-red-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-200 rotate-3">
-                <i data-lucide="volume-2" class="w-12 h-12"></i>
-            </div>
-            <h2 class="text-3xl font-black text-gray-900 mb-3 tracking-tight">垂容 MASTER</h2>
-            <p class="text-gray-500 text-sm mb-10 leading-relaxed font-medium">Bấm nút bên dưới để đồng bộ dữ liệu 100 từ vựng và kích hoạt giọng đọc tiếng Trung.</p>
-            <button onclick="unlockAudio()" class="w-full py-5 bg-red-500 text-white rounded-2xl font-bold shadow-xl shadow-red-200 btn-active uppercase tracking-widest text-sm">
-                BẮT ĐẦU HỌC
-            </button>
-        </div>
-    </div>
+<body class="pb-32">
 
     <!-- Header -->
     <header class="bg-white/90 backdrop-blur-md border-b sticky top-0 z-40 no-print">
@@ -44,83 +34,112 @@
                     <i data-lucide="sparkles" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-black text-gray-900 tracking-tighter">垂容 MASTER</h1>
-                    <p class="text-[9px] text-red-500 font-black uppercase tracking-[0.2em] leading-none">Vocabulary 100+ Pro</p>
+                    <h1 class="text-lg font-black text-gray-900 tracking-tighter uppercase">垂容 MASTER</h1>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">AI VERSION</span>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-[0.1em] leading-none">智能掃描 Smart Scan</p>
+                    </div>
                 </div>
             </div>
-            <button onclick="window.print()" class="p-3 text-gray-400 hover:bg-gray-100 rounded-2xl btn-active transition-all">
-                <i data-lucide="printer" class="w-5 h-5"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="window.print()" class="p-3 text-gray-400 hover:bg-gray-100 rounded-2xl btn-active transition-all">
+                    <i data-lucide="printer" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="max-w-xl mx-auto p-6">
         
-        <!-- Search & Filter -->
+        <!-- Search & Filter (Library) -->
         <section id="view-library" class="space-y-6">
             <div class="space-y-4 no-print">
                 <div class="relative group">
                     <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-red-500 transition-colors"></i>
-                    <input type="text" id="search-input" oninput="renderLibrary()" placeholder="Tìm kiếm từ vựng hoặc nghĩa..." class="w-full pl-14 pr-6 py-5 bg-white rounded-[2rem] border-none shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 focus:ring-2 focus:ring-red-500 transition-all outline-none text-base font-medium">
+                    <input type="text" id="search-input" oninput="renderLibrary()" placeholder="Tìm kiếm từ vựng... 搜索" class="w-full pl-14 pr-6 py-5 bg-white rounded-[2rem] border-none shadow-xl shadow-gray-200/50 ring-1 ring-gray-100 focus:ring-2 focus:ring-red-500 transition-all outline-none text-base font-medium">
                 </div>
-                <div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
-                    <button onclick="setFilter('All')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border active-filter bg-red-500 text-white border-red-500 shadow-lg shadow-red-100" data-val="All">TẤT CẢ</button>
+                <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <button onclick="setFilter('All')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-red-500 text-white border-red-500 shadow-lg shadow-red-100" data-val="All">全部 ALL</button>
                     <button onclick="setFilter('HSK 1')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 1">HSK 1</button>
                     <button onclick="setFilter('HSK 2')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 2">HSK 2</button>
                     <button onclick="setFilter('HSK 3')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 3">HSK 3</button>
                     <button onclick="setFilter('HSK 4')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 4">HSK 4</button>
-                    <button onclick="setFilter('HSK 5')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 5">HSK 5</button>
-                    <button onclick="setFilter('HSK 6')" class="filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100" data-val="HSK 6">HSK 6</button>
                 </div>
             </div>
 
-            <div id="words-list" class="space-y-5">
-                <!-- Content will be here -->
+            <div id="words-list" class="grid grid-cols-1 gap-5">
+                <!-- Content -->
+            </div>
+        </section>
+
+        <!-- AI Scan View -->
+        <section id="view-scan" class="hidden space-y-6">
+            <div class="bg-white rounded-[3rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100">
+                <h2 class="text-xl font-black text-gray-900 mb-2">Quét thông minh / 智能掃描</h2>
+                <p class="text-gray-400 text-sm mb-8 leading-relaxed">Tải lên ảnh hoặc PDF để AI tự động trích xuất chữ Hán.</p>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="cursor-pointer bg-red-50 border-2 border-dashed border-red-200 rounded-[2.5rem] p-8 flex flex-col items-center gap-3 hover:bg-red-100 transition-all btn-active group">
+                        <input type="file" id="scan-image" accept="image/*" class="hidden" onchange="handleOCR(this)">
+                        <div class="w-14 h-14 bg-red-600 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                            <i data-lucide="camera" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Quét Ảnh</span>
+                    </label>
+                    
+                    <label class="cursor-pointer bg-blue-50 border-2 border-dashed border-blue-200 rounded-[2.5rem] p-8 flex flex-col items-center gap-3 hover:bg-blue-100 transition-all btn-active group">
+                        <input type="file" id="scan-pdf" accept="application/pdf" class="hidden" onchange="handlePDF(this)">
+                        <div class="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:-rotate-6 transition-transform">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Đọc PDF</span>
+                    </label>
+                </div>
+
+                <div id="ai-loading" class="hidden mt-8 text-center space-y-4 animate-pop">
+                    <div class="w-full h-24 loading-shimmer rounded-[2rem]"></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">AI đang phân tích dữ liệu...</p>
+                </div>
+
+                <div id="scan-results" class="hidden mt-8 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Kết quả tìm thấy</h3>
+                        <button onclick="clearResults()" class="text-[10px] text-red-500 font-bold uppercase">Hủy</button>
+                    </div>
+                    <div id="results-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar"></div>
+                </div>
             </div>
         </section>
 
         <!-- Flashcard View -->
         <section id="view-flashcard" class="hidden py-6">
-            <div id="flashcard-container" class="flex flex-col items-center gap-10">
-                <!-- Injected via JS -->
-            </div>
+            <div id="flashcard-container" class="flex flex-col items-center gap-10"></div>
         </section>
 
-        <!-- Add View -->
-        <section id="view-add" class="hidden">
-            <div class="bg-white rounded-[3rem] shadow-xl shadow-gray-200/50 border border-gray-100 p-8 space-y-6">
-                <h2 class="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                    <i data-lucide="plus-square" class="text-red-500"></i> THÊM TỪ MỚI
+        <!-- Add Manual Word -->
+        <section id="view-add" class="hidden space-y-6">
+            <div class="bg-white rounded-[3rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                <h2 class="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2 uppercase">
+                    <i data-lucide="plus-square" class="text-red-500"></i> Thêm từ mới / 添加
                 </h2>
                 <div class="space-y-4">
                     <div class="relative">
-                        <input type="text" id="input-hanzi" placeholder="Nhập Hán tự..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold text-lg">
-                        <button onclick="translateWord()" class="absolute right-2 top-2 px-4 py-3 bg-red-600 text-white rounded-xl text-xs font-black shadow-lg active:scale-95">DỊCH</button>
+                        <input type="text" id="input-hanzi" onchange="autoTranslate()" placeholder="Hán tự (汉字)..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold text-lg">
                     </div>
-                    <input type="text" id="input-pinyin" placeholder="Pinyin..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-medium">
-                    <input type="text" id="input-meaning" placeholder="Nghĩa tiếng Việt..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-medium">
+                    <input type="text" id="input-pinyin" placeholder="Pinyin (拼音)..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-medium">
+                    <input type="text" id="input-meaning" placeholder="Nghĩa (释义)..." class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-medium">
                     <select id="input-topic" class="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 transition-all outline-none font-black text-gray-600 appearance-none shadow-sm">
-                        <option value="HSK 1">HSK 1 - CƠ BẢN</option>
-                        <option value="HSK 2">HSK 2 - SƠ CẤP</option>
-                        <option value="HSK 3">HSK 3 - TRUNG CẤP</option>
-                        <option value="HSK 4">HSK 4 - KHÁ</option>
-                        <option value="HSK 5">HSK 5 - CAO CẤP</option>
-                        <option value="HSK 6">HSK 6 - CHUYÊN GIA</option>
+                        <option value="HSK 1">HSK 1</option>
+                        <option value="HSK 2">HSK 2</option>
+                        <option value="HSK 3">HSK 3</option>
+                        <option value="HSK 4">HSK 4</option>
+                        <option value="HSK 5">HSK 5</option>
                     </select>
                 </div>
-                <button onclick="addWord()" class="w-full py-6 bg-red-600 text-white rounded-[2rem] font-black shadow-xl shadow-red-200 hover:bg-red-700 transition-all btn-active text-sm tracking-widest">
-                    LƯU VÀO KHO DỮ LIỆU
+                <button onclick="addWordManually()" class="w-full py-6 bg-red-600 text-white rounded-[2rem] font-black shadow-xl shadow-red-200 transition-all btn-active text-[11px] tracking-widest uppercase">
+                    Lưu từ vựng / 保存
                 </button>
-                <div class="grid grid-cols-2 gap-4 pt-8 border-t border-dashed border-gray-200">
-                    <button onclick="exportData()" class="p-5 bg-white text-gray-500 rounded-3xl text-[10px] font-black border border-gray-100 flex flex-col items-center gap-3 btn-active shadow-sm">
-                        <i data-lucide="cloud-download" class="w-6 h-6"></i> XUẤT FILE JSON
-                    </button>
-                    <label class="p-5 bg-white text-gray-500 rounded-3xl text-[10px] font-black border border-gray-100 flex flex-col items-center gap-3 cursor-pointer btn-active shadow-sm">
-                        <i data-lucide="cloud-upload" class="w-6 h-6"></i> NHẬP FILE JSON
-                        <input type="file" onchange="importData(event)" class="hidden">
-                    </label>
-                </div>
             </div>
         </section>
     </main>
@@ -130,190 +149,215 @@
         <div class="max-w-md mx-auto bg-gray-900/90 backdrop-blur-2xl p-3 rounded-[2.5rem] shadow-2xl flex items-center gap-2 ring-1 ring-white/10">
             <button onclick="switchTab('library')" id="nav-library" class="flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all bg-white text-gray-900 shadow-xl">
                 <i data-lucide="book-marked" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black uppercase tracking-widest">Thư viện</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Từ điển</span>
+            </button>
+            <button onclick="switchTab('scan')" id="nav-scan" class="flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all text-gray-400 hover:text-white">
+                <i data-lucide="scan-text" class="w-5 h-5"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest">Quét</span>
             </button>
             <button onclick="switchTab('flashcard')" id="nav-flashcard" class="flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all text-gray-400 hover:text-white">
                 <i data-lucide="brain-circuit" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black uppercase tracking-widest">Thẻ học</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Học tập</span>
             </button>
             <button onclick="switchTab('add')" id="nav-add" class="flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all text-gray-400 hover:text-white">
                 <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black uppercase tracking-widest">Thêm từ</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Thêm</span>
             </button>
         </div>
     </nav>
 
     <script>
-        // BỘ DỮ LIỆU 100 TỪ VỰNG HSK 1-6
-        const masterVocab = [
-            // HSK 1
-            { id: 1, hanzi: '我', pinyin: 'wǒ', meaning: 'Tôi', topic: 'HSK 1' },
-            { id: 2, hanzi: '你', pinyin: 'nǐ', meaning: 'Bạn', topic: 'HSK 1' },
-            { id: 3, hanzi: '爱', pinyin: 'ài', meaning: 'Yêu', topic: 'HSK 1' },
-            { id: 4, hanzi: '家', pinyin: 'jiā', meaning: 'Nhà', topic: 'HSK 1' },
-            { id: 5, hanzi: '水', pinyin: 'shuǐ', meaning: 'Nước', topic: 'HSK 1' },
-            { id: 6, hanzi: '米饭', pinyin: 'mǐfàn', meaning: 'Cơm', topic: 'HSK 1' },
-            { id: 7, hanzi: '谢谢', pinyin: 'xièxie', meaning: 'Cảm ơn', topic: 'HSK 1' },
-            { id: 8, hanzi: '再见', pinyin: 'zàijiàn', meaning: 'Tạm biệt', topic: 'HSK 1' },
-            { id: 9, hanzi: '书', pinyin: 'shū', meaning: 'Sách', topic: 'HSK 1' },
-            { id: 10, hanzi: '猫', pinyin: 'māo', meaning: 'Con mèo', topic: 'HSK 1' },
-            { id: 11, hanzi: '中国', pinyin: 'Zhōngguó', meaning: 'Trung Quốc', topic: 'HSK 1' },
-            { id: 12, hanzi: '医生', pinyin: 'yīshēng', meaning: 'Bác sĩ', topic: 'HSK 1' },
-            { id: 13, hanzi: '高兴', pinyin: 'gāoxìng', meaning: 'Vui mừng', topic: 'HSK 1' },
-            { id: 14, hanzi: '冷', pinyin: 'lěng', meaning: 'Lạnh', topic: 'HSK 1' },
-            { id: 15, hanzi: '热', pinyin: 'rè', meaning: 'Nóng', topic: 'HSK 1' },
-            // HSK 2
-            { id: 16, hanzi: '等', pinyin: 'děng', meaning: 'Đợi', topic: 'HSK 2' },
-            { id: 17, hanzi: '唱歌', pinyin: 'chànggē', meaning: 'Hát', topic: 'HSK 2' },
-            { id: 18, hanzi: '跑步', pinyin: 'pǎobù', meaning: 'Chạy bộ', topic: 'HSK 2' },
-            { id: 19, hanzi: '颜色', pinyin: 'yánsè', meaning: 'Màu sắc', topic: 'HSK 2' },
-            { id: 20, hanzi: '事情', pinyin: 'shìqing', meaning: 'Sự việc', topic: 'HSK 2' },
-            { id: 21, hanzi: '时间', pinyin: 'shíjiān', meaning: 'Thời gian', topic: 'HSK 2' },
-            { id: 22, hanzi: '报纸', pinyin: 'bàozhǐ', meaning: 'Báo chí', topic: 'HSK 2' },
-            { id: 23, hanzi: '宾馆', pinyin: 'bīnguǎn', meaning: 'Khách sạn', topic: 'HSK 2' },
-            { id: 24, hanzi: '快乐', pinyin: 'kuàilè', meaning: 'Vui vẻ', topic: 'HSK 2' },
-            { id: 25, hanzi: '明白', pinyin: 'míngbai', meaning: 'Hiểu rõ', topic: 'HSK 2' },
-            { id: 26, hanzi: '虽然', pinyin: 'suīrán', meaning: 'Tuy rằng', topic: 'HSK 2' },
-            { id: 27, hanzi: '所以', pinyin: 'suǒyǐ', meaning: 'Cho nên', topic: 'HSK 2' },
-            { id: 28, hanzi: '为什么', pinyin: 'wèishénme', meaning: 'Tại sao', topic: 'HSK 2' },
-            { id: 29, hanzi: '身体', pinyin: 'shēntǐ', meaning: 'Cơ thể', topic: 'HSK 2' },
-            { id: 30, hanzi: '手机', pinyin: 'shǒujī', meaning: 'Điện thoại', topic: 'HSK 2' },
-            // HSK 3
-            { id: 31, hanzi: '愿意', pinyin: 'yuànyì', meaning: 'Bằng lòng', topic: 'HSK 3' },
-            { id: 32, hanzi: '终于', pinyin: 'zhōngyú', meaning: 'Cuối cùng', topic: 'HSK 3' },
-            { id: 33, hanzi: '其实', pinyin: 'qíshí', meaning: 'Thực ra', topic: 'HSK 3' },
-            { id: 34, hanzi: '努力', pinyin: 'nǔlì', meaning: 'Nỗ lực', topic: 'HSK 3' },
-            { id: 35, hanzi: '变化', pinyin: 'biànhuà', meaning: 'Thay đổi', topic: 'HSK 3' },
-            { id: 36, hanzi: '表演', pinyin: 'biǎoyǎn', meaning: 'Biểu diễn', topic: 'HSK 3' },
-            { id: 37, hanzi: '根据', pinyin: 'gēnjù', meaning: 'Căn cứ', topic: 'HSK 3' },
-            { id: 38, hanzi: '会议', pinyin: 'huìyì', meaning: 'Hội nghị', topic: 'HSK 3' },
-            { id: 39, hanzi: '结婚', pinyin: 'jiéhūn', meaning: 'Kết hôn', topic: 'HSK 3' },
-            { id: 40, hanzi: '礼物', pinyin: 'lǐwù', meaning: 'Quà tặng', topic: 'HSK 3' },
-            { id: 41, hanzi: '普通', pinyin: 'pǔtōng', meaning: 'Phổ thông', topic: 'HSK 3' },
-            { id: 42, hanzi: '提高', pinyin: 'tígāo', meaning: 'Nâng cao', topic: 'HSK 3' },
-            { id: 43, hanzi: '解决', pinyin: 'jiějué', meaning: 'Giải quyết', topic: 'HSK 3' },
-            { id: 44, hanzi: '清楚', pinyin: 'qīngchu', meaning: 'Rõ ràng', topic: 'HSK 3' },
-            { id: 45, hanzi: '照顾', pinyin: 'zhàogù', meaning: 'Chăm sóc', topic: 'HSK 3' },
-            // HSK 4
-            { id: 46, hanzi: '幽默', pinyin: 'yōumò', meaning: 'Hài hước', topic: 'HSK 4' },
-            { id: 47, hanzi: '大概', pinyin: 'dàgài', meaning: 'Khoảng chừng', topic: 'HSK 4' },
-            { id: 48, hanzi: '勇敢', pinyin: 'yǒnggǎn', meaning: 'Dũng cảm', topic: 'HSK 4' },
-            { id: 49, hanzi: '责任', pinyin: 'zérèn', meaning: 'Trách nhiệm', topic: 'HSK 4' },
-            { id: 50, hanzi: '哪怕', pinyin: 'nǎpà', meaning: 'Dẫu cho', topic: 'HSK 4' },
-            { id: 51, hanzi: '肯定', pinyin: 'kěndìng', meaning: 'Khẳng định', topic: 'HSK 4' },
-            { id: 52, hanzi: '礼貌', pinyin: 'lǐmào', meaning: 'Lễ phép', topic: 'HSK 4' },
-            { id: 53, hanzi: '由于', pinyin: 'yóuyú', meaning: 'Do bởi', topic: 'HSK 4' },
-            { id: 54, hanzi: '诚实', pinyin: 'chéngshí', meaning: 'Thành thật', topic: 'HSK 4' },
-            { id: 55, hanzi: '骄傲', pinyin: 'jiāo\'ào', meaning: 'Kiêu ngạo', topic: 'HSK 4' },
-            { id: 56, hanzi: '解释', pinyin: 'jiěshì', meaning: 'Giải thích', topic: 'HSK 4' },
-            { id: 57, hanzi: '压力', pinyin: 'yālì', meaning: 'Áp lực', topic: 'HSK 4' },
-            { id: 58, hanzi: '严格', pinyin: 'yángé', meaning: 'Nghiêm khắc', topic: 'HSK 4' },
-            { id: 59, hanzi: '友谊', pinyin: 'yǒuyì', meaning: 'Hữu nghị', topic: 'HSK 4' },
-            { id: 60, hanzi: '尊重', pinyin: 'zūnzhòng', meaning: 'Tôn trọng', topic: 'HSK 4' },
-            // HSK 5
-            { id: 61, hanzi: '珍惜', pinyin: 'zhēnxī', meaning: 'Trân trọng', topic: 'HSK 5' },
-            { id: 62, hanzi: '启发', pinyin: 'qǐfā', meaning: 'Khơi gợi', topic: 'HSK 5' },
-            { id: 63, hanzi: '幻想', pinyin: 'huànxiǎng', meaning: 'Ảo tưởng', topic: 'HSK 5' },
-            { id: 64, hanzi: '改善', pinyin: 'gǎishàn', meaning: 'Cải thiện', topic: 'HSK 5' },
-            { id: 65, hanzi: '遗憾', pinyin: 'yíhàn', meaning: 'Đáng tiếc', topic: 'HSK 5' },
-            { id: 66, hanzi: '贡献', pinyin: 'gòngxiàn', meaning: 'Cống hiến', topic: 'HSK 5' },
-            { id: 67, hanzi: '犹豫', pinyin: 'yóuyù', meaning: 'Do dự', topic: 'HSK 5' },
-            { id: 68, hanzi: '所谓', pinyin: 'suǒwèi', meaning: 'Cái gọi là', topic: 'HSK 5' },
-            { id: 69, hanzi: '深刻', pinyin: 'shēnkè', meaning: 'Sâu sắc', topic: 'HSK 5' },
-            { id: 70, hanzi: '温柔', pinyin: 'wēnróu', meaning: 'Dịu dàng', topic: 'HSK 5' },
-            { id: 71, hanzi: '欣赏', pinyin: 'xīnshǎng', meaning: 'Thưởng thức', topic: 'HSK 5' },
-            { id: 72, hanzi: '享受', pinyin: 'xiǎngshòu', meaning: 'Hưởng thụ', topic: 'HSK 5' },
-            { id: 73, hanzi: '繁荣', pinyin: 'fánróng', meaning: 'Phồn vinh', topic: 'HSK 5' },
-            { id: 74, hanzi: '谦虚', pinyin: 'qiānxū', meaning: 'Khiêm tốn', topic: 'HSK 5' },
-            { id: 75, hanzi: '劝告', pinyin: 'quàngào', meaning: 'Khuyên bảo', topic: 'HSK 5' },
-            // HSK 6
-            { id: 76, hanzi: '恍然大悟', pinyin: 'huǎngrán dàwù', meaning: 'Bừng tỉnh đại ngộ', topic: 'HSK 6' },
-            { id: 77, hanzi: '精益求精', pinyin: 'jīng yì qiú jīng', meaning: 'Đã tốt còn muốn tốt hơn', topic: 'HSK 6' },
-            { id: 78, hanzi: '层出不穷', pinyin: 'céng chū bù qióng', meaning: 'Xuất hiện không ngừng', topic: 'HSK 6' },
-            { id: 79, hanzi: '莫名其妙', pinyin: 'mò míng qí miào', meaning: 'Kỳ lạ không hiểu nổi', topic: 'HSK 6' },
-            { id: 80, hanzi: '半途而废', pinyin: 'bàn tú ér fèi', meaning: 'Bỏ dở giữa chừng', topic: 'HSK 6' },
-            { id: 81, hanzi: '迫不及待', pinyin: 'pò bù jí dài', meaning: 'Cấp bách không chờ được', topic: 'HSK 6' },
-            { id: 82, hanzi: '理所当然', pinyin: 'lǐ suǒ dāng rán', meaning: 'Đương nhiên là thế', topic: 'HSK 6' },
-            { id: 83, hanzi: '核心', pinyin: 'héxīn', meaning: 'Cốt lõi', topic: 'HSK 6' },
-            { id: 84, hanzi: '尴尬', pinyin: 'gāngà', meaning: 'Lúng túng, ngượng ngùng', topic: 'HSK 6' },
-            { id: 85, hanzi: '狡猾', pinyin: 'jiǎohuá', meaning: 'Xảo quyệt', topic: 'HSK 6' },
-            { id: 86, hanzi: '崩溃', pinyin: 'bēngkuì', meaning: 'Sụp đổ', topic: 'HSK 6' },
-            { id: 87, hanzi: '遵循', pinyin: 'zūnxún', meaning: 'Tuân theo', topic: 'HSK 6' },
-            { id: 88, hanzi: '塑造', pinyin: 'sùzào', meaning: 'Nhào nặn, tạo nên', topic: 'HSK 6' },
-            { id: 89, hanzi: '挖掘', pinyin: 'wājué', meaning: 'Khai thác, đào bới', topic: 'HSK 6' },
-            { id: 90, hanzi: '阻碍', pinyin: 'zǔ\'ài', meaning: 'Cản trở', topic: 'HSK 6' },
-            { id: 91, hanzi: '纠纷', pinyin: 'jiūfēn', meaning: 'Tranh chấp', topic: 'HSK 6' },
-            { id: 92, hanzi: '弥补', pinyin: 'míbǔ', meaning: 'Bù đắp', topic: 'HSK 6' },
-            { id: 93, hanzi: '谨慎', pinyin: 'jǐnshèn', meaning: 'Cẩn trọng', topic: 'HSK 6' },
-            { id: 94, hanzi: '宏观', pinyin: 'hóngguān', meaning: 'Vĩ mô', topic: 'HSK 6' },
-            { id: 95, hanzi: '微妙', pinyin: 'wēimiào', meaning: 'Tinh tế, vi diệu', topic: 'HSK 6' },
-            { id: 96, hanzi: '渊博', pinyin: 'yuānbó', meaning: 'Uyên bác', topic: 'HSK 6' },
-            { id: 97, hanzi: '阐述', pinyin: 'chǎnshù', meaning: 'Trình bày, giải thích', topic: 'HSK 6' },
-            { id: 98, hanzi: '兑现', pinyin: 'duìxiàn', meaning: 'Thực hiện lời hứa', topic: 'HSK 6' },
-            { id: 99, hanzi: '诞生', pinyin: 'dànshēng', meaning: 'Ra đời', topic: 'HSK 6' },
-            { id: 100, hanzi: '辉煌', pinyin: 'huīhuáng', meaning: 'Huy hoàng', topic: 'HSK 6' }
-        ];
+        const apiKey = "";
+        
+        // Data generator for HSK lists
+        const generateHSKData = () => {
+            const hsk1 = [
+                {h: '爱', p: 'ài', m: 'yêu'}, {h: '八', p: 'bā', m: 'tám'}, {h: '爸爸', p: 'bàba', m: 'bố'}, {h: '杯子', p: 'bēizi', m: 'cái cốc'}, {h: '北京', p: 'Běijīng', m: 'Bắc Kinh'},
+                {h: '本', p: 'běn', m: 'quyển'}, {h: '不客气', p: 'bú kèqi', m: 'đừng khách khí'}, {h: '不', p: 'bù', m: 'không'}, {h: '菜', p: 'cài', m: 'món ăn, rau'}, {h: '茶', p: 'chá', m: 'trà'},
+                {h: '吃', p: 'chī', m: 'ăn'}, {h: '出租车', p: 'chūzūchē', m: 'xe taxi'}, {h: '打电话', p: 'dǎ diànhuà', m: 'gọi điện thoại'}, {h: '大', p: 'dà', m: 'to, lớn'}, {h: '的', p: 'de', m: 'của (trợ từ)'},
+                {h: '点', p: 'diǎn', m: 'giờ, điểm'}, {h: '电脑', p: 'diànnǎo', m: 'máy tính'}, {h: '电视', p: 'diànshì', m: 'tivi'}, {h: '电影', p: 'diànyǐng', m: 'phim điện ảnh'}, {h: '东西', p: 'dōngxi', m: 'đồ đạc'},
+                {h: '都', p: 'dōu', m: 'đều'}, {h: '读', p: 'dú', m: 'đọc'}, {h: '对不起', p: 'duìbuqǐ', m: 'xin lỗi'}, {h: '多', p: 'duō', m: 'nhiều'}, {h: '多少', p: 'duōshao', m: 'bao nhiêu'},
+                {h: '儿子', p: 'érzi', m: 'con trai'}, {h: '二', p: 'èr', m: 'hai'}, {h: '饭店', p: 'fàndiàn', m: 'khách sạn, nhà hàng'}, {h: '飞机', p: 'fēijī', m: 'máy bay'}, {h: '分钟', p: 'fēnzhōng', m: 'phút'},
+                {h: '高兴', p: 'gāoxìng', m: 'vui mừng'}, {h: '个', p: 'gè', m: 'cái, chiếc'}, {h: '工作', p: 'gōngzuò', m: 'công việc'}, {h: '狗', p: 'gǒu', m: 'con chó'}, {h: '汉语', p: 'Hànyǔ', m: 'tiếng Hán'},
+                {h: '好', p: 'hǎo', m: 'tốt, đẹp'}, {h: '号', p: 'hào', m: 'ngày, số'}, {h: '喝', p: 'hē', m: 'uống'}, {h: '和', p: 'hé', m: 'và'}, {h: '很', p: 'hěn', m: 'rất'},
+                {h: '后面', p: 'hòumiàn', m: 'phía sau'}, {h: '回', p: 'huí', m: 'về'}, {h: '会', p: 'huì', m: 'biết, sẽ'}, {h: '几', p: 'jǐ', m: 'mấy'}, {h: '家', p: 'jiā', m: 'nhà, gia đình'},
+                {h: '叫', p: 'jiào', m: 'gọi là'}, {h: '今天', p: 'jīntiān', m: 'hôm nay'}, {h: '九', p: 'jiǔ', m: 'chín'}, {h: '看', p: 'kàn', m: 'xem, nhìn'}, {h: '看见', p: 'kànjiàn', m: 'nhìn thấy'}
+            ];
+            const hsk2 = [
+                {h: '吧', p: 'ba', m: 'nhé, đi'}, {h: '白', p: 'bái', m: 'trắng'}, {h: '百', p: 'bǎi', m: 'trăm'}, {h: '帮助', p: 'bāngzhù', m: 'giúp đỡ'}, {h: '报纸', p: 'bàozhǐ', m: 'báo chí'},
+                {h: '比', p: 'bǐ', m: 'so với'}, {h: '别', p: 'bié', m: 'đừng'}, {h: '长', p: 'cháng', m: 'dài'}, {h: '唱歌', p: 'chànggē', m: 'hát'}, {h: '出', p: 'chū', m: 'ra'},
+                {h: '穿', p: 'chuān', m: 'mặc'}, {h: '次', p: 'cì', m: 'lần'}, {h: '从', p: 'cóng', m: 'từ'}, {h: '错', p: 'cuò', m: 'sai'}, {h: '打篮球', p: 'dǎ lánqiú', m: 'đánh bóng rổ'},
+                {h: '大家', p: 'dàjiā', m: 'mọi người'}, {h: '到', p: 'dào', m: 'đến'}, {h: '得', p: 'de', m: 'được'}, {h: '等', p: 'děng', m: 'đợi'}, {h: '弟弟', p: 'dìdi', m: 'em trai'},
+                {h: '第一', p: 'dì-yī', m: 'thứ nhất'}, {h: '懂', p: 'dǒng', m: 'hiểu'}, {h: '对', p: 'duì', m: 'đúng'}, {h: '房间', p: 'fángjiān', m: 'phòng'}, {h: '非常', p: 'fēicháng', m: 'vô cùng'},
+                {h: '服务员', p: 'fúwùyuán', m: 'phục vụ'}, {h: '高', p: 'gāo', m: 'cao'}, {h: '告诉', p: 'gàosu', m: 'nói cho'}, {h: '哥哥', p: 'gēge', m: 'anh trai'}, {h: '给', p: 'gěi', m: 'cho'},
+                {h: '公共汽车', p: 'gōnggòng qìchē', m: 'xe buýt'}, {h: '公司', p: 'gōngsī', m: 'công ty'}, {h: '贵', p: 'guì', m: 'đắt'}, {h: '过', p: 'guò', m: 'qua'}, {h: '还', p: 'hái', m: 'còn'},
+                {h: '孩子', p: 'háizi', m: 'trẻ con'}, {h: '好吃', p: 'hǎochī', m: 'ngon'}, {h: '黑', p: 'hēi', m: 'đen'}, {h: '红', p: 'hóng', m: 'đỏ'}, {h: '欢迎', p: 'huānyíng', m: 'hoan nghênh'},
+                {h: '回答', p: 'huídá', m: 'trả lời'}, {h: '火车站', p: 'huǒchēzhàn', m: 'ga tàu hỏa'}, {h: '机场', p: 'jīchǎng', m: 'sân bay'}, {h: '鸡蛋', p: 'jīdàn', m: 'trứng gà'}, {h: '件', p: 'jiàn', m: 'kiện (lượng từ)'},
+                {h: '教室', p: 'jiàoshì', m: 'lớp học'}, {h: '姐姐', p: 'jiějiě', m: 'chị gái'}, {h: '介绍', p: 'jièshào', m: 'giới thiệu'}, {h: '进', p: 'jìn', m: 'vào'}, {h: '近', p: 'jìn', m: 'gần'}
+            ];
+            const hsk3 = [
+                {h: '阿姨', p: 'āyí', m: 'dì, cô'}, {h: '啊', p: 'a', m: 'a, hả'}, {h: '矮', p: 'ǎi', m: 'thấp'}, {h: '爱好', p: 'àihào', m: 'sở thích'}, {h: '安静', p: 'ānjìng', m: 'yên tĩnh'},
+                {h: '把', p: 'bǎ', m: 'đem, cầm'}, {h: '班', p: 'bān', m: 'lớp, ca'}, {h: '搬', p: 'bān', m: 'dọn, chuyển'}, {h: '办法', p: 'bànfǎ', m: 'cách, biện pháp'}, {h: '办公室', p: 'bàngōngshì', m: 'văn phòng'},
+                {h: '半', p: 'bàn', m: 'nửa'}, {h: '帮忙', p: 'bāngmáng', m: 'giúp'}, {h: '包', p: 'bāo', m: 'túi, bọc'}, {h: '饱', p: 'bǎo', m: 'no'}, {h: '北方', p: 'běifāng', m: 'phương Bắc'},
+                {h: '被', p: 'bèi', m: 'bị'}, {h: '鼻子', p: 'bízi', m: 'mũi'}, {h: '比较', p: 'bǐjiào', m: 'khá là'}, {h: '比赛', p: 'bǐsài', m: 'thi đấu'}, {h: '笔记本', p: 'bǐjìběn', m: 'vở ghi chép'},
+                {h: '必须', p: 'bìxū', m: 'phải'}, {h: '变化', p: 'biànhuà', m: 'thay đổi'}, {h: '别人', p: 'biérén', m: 'người khác'}, {h: '冰箱', p: 'bīngxiāng', m: 'tủ lạnh'}, {h: '不但', p: 'búdàn', m: 'không những'},
+                {h: '菜单', p: 'càidān', m: 'thực đơn'}, {h: '参加', p: 'cānjiā', m: 'tham gia'}, {h: '草', p: 'cǎo', m: 'cỏ'}, {h: '层', p: 'céng', m: 'tầng'}, {h: '差', p: 'chà', m: 'kém, thiếu'},
+                {h: '超市', p: 'chāoshì', m: 'siêu thị'}, {h: '衬衫', p: 'chènshān', m: 'áo sơ mi'}, {h: '成绩', p: 'chéngjì', m: 'thành tích'}, {h: '城市', p: 'chéngshì', m: 'thành phố'}, {h: '迟到', p: 'chídào', m: 'muộn'},
+                {h: '出现', p: 'chūxiàn', m: 'xuất hiện'}, {h: '厨房', p: 'chúfáng', m: 'nhà bếp'}, {h: '除了', p: 'chúle', m: 'ngoài ra'}, {h: '春', p: 'chūn', m: 'mùa xuân'}, {h: '词典', p: 'cídiǎn', m: 'từ điển'},
+                {h: '聪明', p: 'cōngming', m: 'thông minh'}, {h: '打扫', p: 'dǎsǎo', m: 'quét dọn'}, {h: '打算', p: 'dǎsuàn', m: 'dự định'}, {h: '带', p: 'dài', m: 'mang theo'}, {h: '担心', p: 'dānxīn', m: 'lo lắng'},
+                {h: '蛋糕', p: 'dàngāo', m: 'bánh gato'}, {h: '当然', p: 'dāngrán', m: 'tất nhiên'}, {h: '灯', p: 'dēng', m: 'đèn'}, {h: '低', p: 'dī', m: 'thấp'}, {h: '地方', p: 'dìfang', m: 'nơi, chốn'}
+            ];
+            
+            const allWords = [];
+            hsk1.forEach((w, i) => allWords.push({id: `1-${i}`, hanzi: w.h, pinyin: w.p, meaning: w.m, topic: 'HSK 1', createdAt: Date.now() - i*1000}));
+            hsk2.forEach((w, i) => allWords.push({id: `2-${i}`, hanzi: w.h, pinyin: w.p, meaning: w.m, topic: 'HSK 2', createdAt: Date.now() - i*1000}));
+            hsk3.forEach((w, i) => allWords.push({id: `3-${i}`, hanzi: w.h, pinyin: w.p, meaning: w.m, topic: 'HSK 3', createdAt: Date.now() - i*1000}));
+            return allWords;
+        };
 
-        let words = JSON.parse(localStorage.getItem('thuy_dung_master_v100')) || masterVocab;
+        // Initialize state
+        let words = JSON.parse(localStorage.getItem('thuy_dung_vocab'));
+        if (!words || words.length < 50) {
+            words = generateHSKData();
+            localStorage.setItem('thuy_dung_vocab', JSON.stringify(words));
+        }
+        
         let currentFilter = 'All';
         let currentCardIndex = 0;
 
-        // KHỞI TẠO ÂM THANH
-        function unlockAudio() {
-            window.speechSynthesis.cancel();
-            const s = new SpeechSynthesisUtterance('你好');
-            s.lang = 'zh-CN';
-            s.volume = 0; // Đọc thầm để đánh thức engine
-            window.speechSynthesis.speak(s);
-            
-            document.getElementById('audio-unlocker').classList.add('opacity-0');
-            setTimeout(() => document.getElementById('audio-unlocker').remove(), 300);
-            
-            renderLibrary();
+        window.onload = () => {
             lucide.createIcons();
-        }
+            renderLibrary();
+        };
 
-        function speak(text) {
-            if (!text || !window.speechSynthesis) return;
-            window.speechSynthesis.cancel();
-            
-            setTimeout(() => {
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'zh-CN';
-                u.rate = 0.8;
-                const vs = window.speechSynthesis.getVoices();
-                const v = vs.find(x => x.lang.includes('zh-CN') || x.lang.includes('zh_CN'));
-                if (v) u.voice = v;
-                window.speechSynthesis.speak(u);
-            }, 50);
-        }
-
+        // NAVIGATION
         function switchTab(tab) {
-            ['library', 'flashcard', 'add'].forEach(t => {
+            ['library', 'scan', 'flashcard', 'add'].forEach(t => {
                 document.getElementById(`view-${t}`).classList.add('hidden');
-                document.getElementById(`nav-${t}`).className = "flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all text-gray-400 hover:text-white";
+                const btn = document.getElementById(`nav-${t}`);
+                btn.className = "flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all text-gray-400 hover:text-white";
             });
             document.getElementById(`view-${tab}`).classList.remove('hidden');
             document.getElementById(`nav-${tab}`).className = "flex-1 py-4 rounded-[2rem] flex flex-col items-center gap-1.5 transition-all bg-white text-gray-900 shadow-xl";
             
-            if (tab === 'flashcard') {
-                currentCardIndex = 0;
-                renderFlashcard();
-            }
+            if (tab === 'flashcard') { currentCardIndex = 0; renderFlashcard(); }
             lucide.createIcons();
         }
 
-        function setFilter(val) {
-            currentFilter = val;
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                if (b.getAttribute('data-val') === val) {
-                    b.className = "filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-red-500 text-white border-red-500 shadow-lg shadow-red-100";
-                } else {
-                    b.className = "filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100";
+        // AI SCAN FUNCTIONS
+        async function handleOCR(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            document.getElementById('ai-loading').classList.remove('hidden');
+            document.getElementById('scan-results').classList.add('hidden');
+
+            reader.onload = async (e) => {
+                const base64Data = e.target.result.split(',')[1];
+                try {
+                    const result = await retryFetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: "Hãy trích xuất tất cả các từ vựng tiếng Trung quan trọng từ ảnh này. Trả về định dạng JSON: { 'words': [{ 'hanzi': '...', 'pinyin': '...', 'meaning': '...' }] } (Nghĩa tiếng Việt). Chỉ trả về JSON." },
+                                    { inlineData: { mimeType: "image/png", data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    displayScanResults(data.words);
+                } catch (err) {
+                    alert("Lỗi OCR. Hãy thử lại.");
+                } finally {
+                    document.getElementById('ai-loading').classList.add('hidden');
                 }
-            });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function handlePDF(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            document.getElementById('ai-loading').classList.remove('hidden');
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                let text = "";
+                for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(" ");
+                }
+                const result = await retryFetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `Phân tích và lọc từ vựng tiếng Trung từ văn bản sau. Trả về JSON: { 'words': [{ 'hanzi': '...', 'pinyin': '...', 'meaning': '...' }] }. Văn bản: ${text}` }]
+                        }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                displayScanResults(data.words);
+            } catch (err) {
+                alert("Lỗi đọc PDF.");
+            } finally {
+                document.getElementById('ai-loading').classList.add('hidden');
+            }
+        }
+
+        function displayScanResults(results) {
+            const list = document.getElementById('results-list');
+            document.getElementById('scan-results').classList.remove('hidden');
+            list.innerHTML = results.map(w => `
+                <div class="bg-gray-50 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-lg font-black text-gray-900">${w.hanzi}</p>
+                        <p class="text-[10px] text-red-500 font-bold uppercase italic">${w.pinyin}</p>
+                        <p class="text-[11px] text-gray-500 font-medium">${w.meaning}</p>
+                    </div>
+                    <button onclick="saveFromScan('${w.hanzi}', '${w.pinyin}', '${w.meaning}')" class="px-4 py-2 bg-gray-900 text-white rounded-xl text-[9px] font-black uppercase">Lưu</button>
+                </div>
+            `).join('');
+        }
+
+        function saveFromScan(h, p, m) {
+            const newWord = { id: Date.now(), hanzi: h, pinyin: p, meaning: m, topic: 'HSK 1', createdAt: Date.now() };
+            words.push(newWord);
+            saveToLocal();
             renderLibrary();
         }
+
+        function clearResults() {
+            document.getElementById('scan-results').classList.add('hidden');
+            document.getElementById('results-list').innerHTML = '';
+        }
+
+        // AUTO TRANSLATE
+        async function autoTranslate() {
+            const hanzi = document.getElementById('input-hanzi').value;
+            if (!hanzi) return;
+            try {
+                const result = await retryFetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `Dịch từ này sang Tiếng Việt và Pinyin. Trả về JSON: { 'pinyin': '...', 'meaning': '...' }. Từ: ${hanzi}` }]
+                        }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                document.getElementById('input-pinyin').value = data.pinyin;
+                document.getElementById('input-meaning').value = data.meaning;
+            } catch (e) {}
+        }
+
+        // CORE STORAGE & UI
+        function saveToLocal() { localStorage.setItem('thuy_dung_vocab', JSON.stringify(words)); }
 
         function renderLibrary() {
             const search = document.getElementById('search-input').value.toLowerCase();
@@ -321,48 +365,44 @@
             const filtered = words.filter(w => 
                 (currentFilter === 'All' || w.topic === currentFilter) &&
                 (w.hanzi.toLowerCase().includes(search) || w.meaning.toLowerCase().includes(search))
-            );
+            ).sort((a, b) => b.createdAt - a.createdAt);
 
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="p-10 bg-white rounded-[2.5rem] border border-dashed border-gray-200 text-center font-bold text-gray-300 uppercase tracking-widest text-xs">Trống trải...</div>`;
-            } else {
-                list.innerHTML = filtered.map(w => `
-                    <div class="bg-white p-7 rounded-[2.5rem] shadow-xl shadow-gray-200/40 border border-white flex items-center justify-between group animate-pop">
-                        <div class="flex-1 min-w-0 pr-4">
-                            <span class="inline-block px-2.5 py-1 bg-red-50 text-red-500 text-[8px] font-black rounded-lg uppercase mb-3 tracking-wider">${w.topic}</span>
-                            <h3 class="text-3xl font-black text-gray-900 tracking-tight mb-1 truncate">${w.hanzi}</h3>
-                            <p class="text-red-500 text-sm font-bold italic mb-1">${w.pinyin}</p>
-                            <p class="text-gray-500 text-sm font-medium line-clamp-1">${w.meaning}</p>
-                        </div>
-                        <button onclick="speak('${w.hanzi}')" class="w-16 h-16 bg-gray-50 text-gray-400 rounded-[1.5rem] flex items-center justify-center btn-active hover:bg-red-50 hover:text-red-500 transition-all ring-1 ring-gray-100">
-                            <i data-lucide="volume-2" class="w-7 h-7"></i>
+            list.innerHTML = filtered.length ? filtered.map(w => `
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-gray-200/40 border border-white flex items-center justify-between animate-pop">
+                    <div class="flex-1 pr-4">
+                        <span class="text-[8px] bg-red-50 text-red-600 px-2 py-0.5 rounded font-black uppercase mb-1 inline-block">${w.topic}</span>
+                        <h3 class="text-3xl font-black text-gray-900 mb-0.5">${w.hanzi}</h3>
+                        <p class="text-red-500 text-[11px] font-bold italic mb-1 uppercase">${w.pinyin}</p>
+                        <p class="text-gray-500 text-xs font-semibold">${w.meaning}</p>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="speak('${w.hanzi}')" class="w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center btn-active">
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="deleteWord('${w.id}')" class="w-12 h-12 bg-white text-gray-200 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
-                `).join('');
-            }
+                </div>
+            `).join('') : '<div class="p-20 text-center font-bold text-gray-300 uppercase tracking-widest text-[10px]">Trống trải...</div>';
             lucide.createIcons();
         }
 
         function renderFlashcard() {
             const data = words.filter(w => currentFilter === 'All' || w.topic === currentFilter);
             const container = document.getElementById('flashcard-container');
-            if (data.length === 0) {
-                container.innerHTML = `<p class="font-bold text-gray-300 uppercase py-20">Hãy thêm từ trước!</p>`;
-                return;
-            }
+            if (!data.length) { container.innerHTML = `<p class="py-20 text-gray-300 font-black uppercase text-[10px]">Không có từ vựng phù hợp</p>`; return; }
+            if (currentCardIndex >= data.length) currentCardIndex = 0;
             const w = data[currentCardIndex];
             container.innerHTML = `
-                <div class="relative w-full max-w-[320px] h-[450px] cursor-pointer no-print" onclick="this.querySelector('.card-inner').classList.toggle('is-flipped')">
+                <div class="relative w-full max-w-[320px] h-[450px] cursor-pointer" onclick="this.querySelector('.card-inner').classList.toggle('is-flipped')">
                     <div class="card-inner w-full h-full relative">
-                        <div class="card-front bg-white rounded-[3.5rem] shadow-2xl border border-white flex flex-col items-center justify-center p-10 text-center ring-1 ring-black/5">
-                            <span class="absolute top-10 px-5 py-1.5 bg-red-500 text-white text-[9px] font-black rounded-full tracking-widest shadow-lg">${w.topic}</span>
+                        <div class="card-front bg-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-10 text-center border-4 border-red-50 ring-1 ring-black/5">
                             <h2 class="text-8xl font-black text-gray-900 mb-8">${w.hanzi}</h2>
-                            <div class="flex items-center gap-2 text-gray-300 font-black text-[9px] uppercase tracking-[0.3em]">
-                                <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Chạm để lật
-                            </div>
+                            <p class="text-gray-300 font-black text-[9px] uppercase tracking-widest italic">Chạm để xem nghĩa</p>
                         </div>
-                        <div class="card-back bg-gray-900 rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center text-white ring-1 ring-white/20">
-                            <p class="text-xl font-bold mb-3 text-red-500 italic uppercase tracking-widest">${w.pinyin}</p>
+                        <div class="card-back bg-gray-900 rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center text-white">
+                            <p class="text-xl font-bold mb-3 text-red-500 italic uppercase">${w.pinyin}</p>
                             <h3 class="text-4xl font-black mb-10 leading-tight">${w.meaning}</h3>
                             <button onclick="event.stopPropagation(); speak('${w.hanzi}')" class="w-20 h-20 bg-white text-gray-900 rounded-full flex items-center justify-center shadow-2xl btn-active">
                                 <i data-lucide="volume-2" class="w-10 h-10"></i>
@@ -370,77 +410,62 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-10 no-print">
-                    <button onclick="prevCard()" class="p-6 bg-white rounded-3xl shadow-xl text-gray-400 btn-active border border-gray-100">
-                        <i data-lucide="chevron-left" class="w-8 h-8"></i>
-                    </button>
-                    <span class="text-sm font-black text-gray-300 tracking-[0.2em] uppercase">${currentCardIndex + 1} / ${data.length}</span>
-                    <button onclick="nextCard()" class="p-6 bg-white rounded-3xl shadow-xl text-gray-400 btn-active border border-gray-100">
-                        <i data-lucide="chevron-right" class="w-8 h-8"></i>
-                    </button>
+                <div class="flex items-center gap-10">
+                    <button onclick="currentCardIndex = Math.max(0, currentCardIndex-1); renderFlashcard()" class="p-6 bg-white rounded-3xl shadow-xl text-gray-400 btn-active"><i data-lucide="chevron-left" class="w-8 h-8"></i></button>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${currentCardIndex + 1} / ${data.length}</span>
+                    <button onclick="currentCardIndex = Math.min(data.length-1, currentCardIndex+1); renderFlashcard()" class="p-6 bg-white rounded-3xl shadow-xl text-gray-400 btn-active"><i data-lucide="chevron-right" class="w-8 h-8"></i></button>
                 </div>
             `;
             lucide.createIcons();
         }
 
-        function nextCard() {
-            const data = words.filter(w => currentFilter === 'All' || w.topic === currentFilter);
-            if (currentCardIndex < data.length - 1) { currentCardIndex++; renderFlashcard(); }
-        }
-        function prevCard() {
-            if (currentCardIndex > 0) { currentCardIndex--; renderFlashcard(); }
+        function speak(text) {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'zh-CN'; u.rate = 0.9;
+            window.speechSynthesis.speak(u);
         }
 
-        async function translateWord() {
-            const h = document.getElementById('input-hanzi').value;
-            if (!h) return;
-            try {
-                const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(h)}&langpair=zh-CN|vi`);
-                const d = await r.json();
-                document.getElementById('input-meaning').value = d.responseData.translatedText;
-            } catch (e) { alert("Dịch thuật thất bại."); }
-        }
-
-        function addWord() {
-            const h = document.getElementById('input-hanzi').value;
-            const p = document.getElementById('input-pinyin').value;
-            const m = document.getElementById('input-meaning').value;
-            const t = document.getElementById('input-topic').value;
-            if (!h || !m) return;
-            words.unshift({ id: Date.now(), hanzi: h, pinyin: p, meaning: m, topic: t });
-            localStorage.setItem('thuy_dung_master_v100', JSON.stringify(words));
+        function addWordManually() {
+            const hanzi = document.getElementById('input-hanzi').value;
+            const pinyin = document.getElementById('input-pinyin').value;
+            const meaning = document.getElementById('input-meaning').value;
+            const topic = document.getElementById('input-topic').value;
+            if (!hanzi || !meaning) return;
+            words.push({ id: Date.now().toString(), hanzi, pinyin, meaning, topic, createdAt: Date.now() });
+            saveToLocal();
             document.getElementById('input-hanzi').value = '';
             document.getElementById('input-pinyin').value = '';
             document.getElementById('input-meaning').value = '';
             switchTab('library');
+        }
+
+        function deleteWord(id) {
+            if (confirm("Xóa từ này khỏi thư viện?")) {
+                words = words.filter(w => w.id !== id);
+                saveToLocal();
+                renderLibrary();
+            }
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.className = b.getAttribute('data-val') === f ? "filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-red-500 text-white border-red-500 shadow-lg shadow-red-100" : "filter-btn px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border bg-white text-gray-400 border-gray-100";
+            });
             renderLibrary();
         }
 
-        function exportData() {
-            const b = new Blob([JSON.stringify(words)], {type: 'application/json'});
-            const u = URL.createObjectURL(b);
-            const a = document.createElement('a'); a.href = u; a.download = 'thuydung-vocab.json'; a.click();
+        async function retryFetch(url, options, retries = 5) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(`${url}?key=${apiKey}`, options);
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
         }
-
-        function importData(e) {
-            const f = e.target.files[0];
-            if (!f) return;
-            const r = new FileReader();
-            r.onload = (x) => {
-                const d = JSON.parse(x.target.result);
-                words = [...d, ...words];
-                localStorage.setItem('thuy_dung_master_v100', JSON.stringify(words));
-                renderLibrary();
-                alert('Đã cập nhật dữ liệu!');
-            };
-            r.readAsText(f);
-        }
-
-        window.onload = () => {
-            lucide.createIcons();
-            // Tải danh sách voices sẵn
-            window.speechSynthesis.getVoices();
-        };
     </script>
 </body>
 </html>
